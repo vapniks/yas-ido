@@ -1,0 +1,25 @@
+* Commentary
+
+This package contains a couple of commands for using yasnippets with `ido'.
+
+Bitcoin donations gratefully accepted: 1ArFina3Mi8UDghjarGqATeBgXRDWrsmzo
+
+* Commands
+
+Below are complete command list:
+
+ - `yas-ido-expand-snippet' : Select snippet using ido and expand it. 
+ - `yas-ido-edit-snippet' : Select snippet using ido and edit it.
+
+
+* Installation
+
+Put yas-ido.el in a directory in your load-path, e.g. ~/.emacs.d/
+You can add a directory to your load-path with the following line in ~/.emacs
+(add-to-list 'load-path (expand-file-name "~/elisp"))
+where ~/elisp is the directory you want to add 
+(you don't need to do this for ~/.emacs.d - it's added by default).
+
+Add the following to your ~/.emacs startup file.
+
+(require 'yas-ido)
