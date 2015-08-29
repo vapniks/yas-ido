@@ -54,6 +54,14 @@
 ;;   Select snippet using ido and edit it.
 ;;;;
 
+;;; Customize: 
+;;
+;; You may need to change the value of `yas-ido-snippet-header-file' (which see)
+;; This can be done by:
+;;      M-x customize-variable RET yas-ido-snippet-header-file RET
+;;
+
+
 ;;; Installation:
 ;;
 ;; Put yas-ido.el in a directory in your load-path, e.g. ~/.emacs.d/
@@ -71,85 +79,73 @@
 
 ;;; Code:
 
+(defun yas-ido-root-directory nil
+  "Return the users root snippets directory."
+  (if (stringp yas-snippet-dirs) yas-snippet-dirs
+    (if (listp yas-snippet-dirs) (car yas-snippet-dirs)
+      (error "Invalid `yas-snippet-dirs'"))))
+
+(defun yas-ido-get-mode-dir (mode)
+  "Given major-mode symbol MODE, return the directory containing snippets for that mode.
+If there is no snippets directory associated with that mode return `(yas-ido-root-directory)'."
+  (let* ((templates (yas--all-templates (remove-duplicates (list (gethash mode yas--tables)))))
+         (full-file-names (mapcar #'(lambda (template) (yas--template-file template)) templates))
+         (regex (regexp-opt (list (concat "/" (symbol-name mode) "/")))))
+    (or (dolist (file-name full-file-names)
+          (when (string-match regex file-name)
+            (return (substring file-name 0 (match-end 0)))))
+        (yas-ido-root-directory))))
+
 (defun yas-ido-expand-snippet (location)
   "Select yasnippet using ido and expand it.
 When called non-interactively expand snippet in file at LOCATION."
-  (interactive (let* ((topdir yas/root-directory)
-                      (dirpathslist (get-subdirs topdir 5))
-                      (dirnameslist (mapcar 'file-name-nondirectory dirpathslist))
-                      (chosendirname (ido-completing-read "Snippets folder: " dirnameslist nil t))
-                      (numdirnames (length dirnameslist))
-                      (afterdirnameslist (member chosendirname dirnameslist))
-                      (posindirlist (- numdirnames (length afterdirnameslist)))
-                      (chosendirpath (nth posindirlist dirpathslist))
-                      (snippetslist nil)
-                      (snippetslist (progn
-                                      (dolist (x (directory-files chosendirpath t))
-                                        (if (and (file-regular-p x) (not (file-symlink-p x)))
-                                            (setq snippetslist (append (list (file-name-nondirectory x)) snippetslist))))
-                                      snippetslist))
-                      (chosensnippetname (ido-completing-read "Name of snippet: " snippetslist))
-                      (chosensnippetpath (concat chosendirpath "/" chosensnippetname)))
-                 (list chosensnippetpath)))
-  (let ((snippet))
-    (with-temp-buffer
-      (insert-file-contents location)
-      (goto-char (point-min))
-      (setq snippet
-            (buffer-substring-no-properties
-             (re-search-forward "# --.*\n")
-             (point-max))))
-    (yas/expand-snippet snippet)))
+  (interactive (list (ido-read-file-name
+		      "Snippet file: "
+		      (yas-ido-get-mode-dir major-mode) nil t)))
+  (let ((snippet (with-temp-buffer
+		   (insert-file-contents location)
+		   (goto-char (point-min))
+		   (buffer-substring-no-properties
+		    (re-search-forward "# --.*\n")
+		    (point-max)))))
+    (yas-expand-snippet snippet)))
+
+(defcustom yas-ido-snippet-header-file nil
+  "File containing header for snippet files.
+This header will be inserted at the beginning of any snippets created 
+with `yas-ido-edit-snippet'."
+  :type 'file)
 
 (defun yas-ido-edit-snippet (location content)
   "Select snippet using ido and edit it.
 When called non-interactively make/edit a snippet in file at LOCATION placing CONTENT at the end"
-  (interactive (let* ((topdir (nth 0 yas/root-directory))
-                      (dirpathslist (get-subdirs topdir 5))
-                      (dirnameslist (mapcar 'file-name-nondirectory dirpathslist))
-                      (chosendirname (ido-completing-read "Snippets folder: " dirnameslist nil t))
-                      (numdirnames (length dirnameslist))
-                      (afterdirnameslist (member chosendirname dirnameslist))
-                      (newdir (if afterdirnameslist nil t))
-                      (posindirlist (if (not newdir) (- numdirnames (length afterdirnameslist))))
-                      (chosendirpath (if (not newdir) (nth posindirlist dirpathslist) (concat topdir "/" chosendirname)))
-                      (snippetslist nil)
-                      (snippetslist (if (not newdir)
-                                        (progn
-                                          (dolist (x (directory-files chosendirpath t))
-                                            (if (and (file-regular-p x) (not (file-symlink-p x)))
-                                                (setq snippetslist (append (list (file-name-nondirectory x)) snippetslist))))
-                                          snippetslist)))
-                      (chosensnippetname (if newdir
-                                             (read-from-minibuffer "Name of snippet: ")
-                                           (ido-completing-read "Name of snippet: " snippetslist)))
-                      (chosensnippetpath (concat chosendirpath "/" chosensnippetname))
-                      (selectedregion (if mark-active (buffer-substring-no-properties (region-beginning) (region-end)) nil))
-                      (chosencontent (if (and mark-active (y-or-n-p "Insert currently selected region (y/n)? ")) selectedregion "")))
-                 (list chosensnippetpath chosencontent)))
-  (let ((editsnippet (file-exists-p location)))
-    (if editsnippet
-        (progn
-          (find-file location)
-          (goto-char (point-max))
-          (insert content))
-      (let ((snippetsnippetfile (concat (nth 0 yas/root-directory) "/text-mode/snippet")))
-        (switch-to-buffer (get-buffer-create location))
-        (set-visited-file-name location)
-        (insert content)
-        (if (file-exists-p snippetsnippetfile)
-            (progn
-              (with-temp-buffer
-                (goto-char (point-min))
-                (insert-file-contents snippetsnippetfile)
-                (goto-char (point-min))
-                (setq snippettemplate
-                      (buffer-substring-no-properties
-                       (re-search-forward "# --.*\n")
-                       (point-max))))
-              (goto-char (point-min))
-              (yas/expand-snippet 1 1 snippettemplate)))))))
-
+  (interactive (list (ido-read-file-name "Snippet file: " (yas-ido-get-mode-dir major-mode))
+		     (if (and mark-active (y-or-n-p "Insert currently selected region (y/n)? "))
+			 (if mark-active
+			     (buffer-substring-no-properties
+			      (region-beginning) (region-end))
+			   nil) "")))
+  (if (file-exists-p location)
+      (progn
+	(find-file location)
+	(goto-char (point-max))
+	(insert content))
+    (switch-to-buffer (get-buffer-create location))
+    (set-visited-file-name location)
+    (insert content)
+    (if (and (stringp yas-ido-snippet-header-file)
+	     (file-exists-p yas-ido-snippet-header-file))
+	(progn
+	  (with-temp-buffer
+	    (goto-char (point-min))
+	    (insert-file-contents yas-ido-snippet-header-file)
+	    (goto-char (point-min))
+	    (setq snippettemplate
+		  (buffer-substring-no-properties
+		   (re-search-forward "# --.*\n")
+		   (point-max))))
+	  (goto-char (point-min))
+	  (yas-expand-snippet 1 1 snippettemplate)))))
 
 (provide 'yas-ido)
 
