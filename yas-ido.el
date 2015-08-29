@@ -48,6 +48,8 @@
 ;;
 ;; Below are complete command list:
 ;;
+;; `yas-ido-expand-or-edit-snippet'
+;;   With prefix ARG call `yas-ido-edit-snippet' else call `yas-ido-expand-snippet'.
 ;; `yas-ido-expand-snippet'
 ;;   Select snippet using ido and expand it. 
 ;; `yas-ido-edit-snippet'
@@ -150,6 +152,14 @@ When called non-interactively make/edit a snippet in file at LOCATION placing CO
 		   (point-max))))
 	  (goto-char (point-min))
 	  (yas-expand-snippet 1 1 snippettemplate)))))
+
+;;;###autoload
+(defun yas-ido-expand-or-edit-snippet (arg)
+  "With prefix ARG call `yas-ido-edit-snippet' else call `yas-ido-expand-snippet'."
+  (interactive "P")
+  (call-interactively
+   (if arg 'yas-ido-edit-snippet
+     'yas-ido-expand-snippet)))
 
 (provide 'yas-ido)
 
