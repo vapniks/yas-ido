@@ -8,6 +8,7 @@ Bitcoin donations gratefully accepted: 1ArFina3Mi8UDghjarGqATeBgXRDWrsmzo
 
 Below are complete command list:
 
+ - `yas-ido-expand-or-edit-snippet' : With prefix ARG call `yas-ido-edit-snippet' else call `yas-ido-expand-snippet'.
  - `yas-ido-expand-snippet' : Select snippet using ido and expand it. 
  - `yas-ido-edit-snippet' : Select snippet using ido and edit it.
 
