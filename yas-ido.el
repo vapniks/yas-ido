@@ -139,19 +139,19 @@ When called non-interactively make/edit a snippet in file at LOCATION placing CO
     (switch-to-buffer (get-buffer-create location))
     (set-visited-file-name location)
     (insert content)
+    (snippet-mode)
     (if (and (stringp yas-ido-snippet-header-file)
 	     (file-exists-p yas-ido-snippet-header-file))
-	(progn
-	  (with-temp-buffer
-	    (goto-char (point-min))
-	    (insert-file-contents yas-ido-snippet-header-file)
-	    (goto-char (point-min))
-	    (setq snippettemplate
-		  (buffer-substring-no-properties
-		   (re-search-forward "# --.*\n")
-		   (point-max))))
+	(let ((snippettemplate
+	       (with-temp-buffer
+		 (goto-char (point-min))
+		 (insert-file-contents yas-ido-snippet-header-file)
+		 (goto-char (point-min))
+		 (buffer-substring-no-properties
+		  (re-search-forward "# --.*\n")
+		  (point-max)))))
 	  (goto-char (point-min))
-	  (yas-expand-snippet 1 1 snippettemplate)))))
+	  (yas-expand-snippet snippettemplate)))))
 
 ;;;###autoload
 (defun yas-ido-expand-or-edit-snippet (arg)
