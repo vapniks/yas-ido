@@ -11,6 +11,10 @@ Below are complete command list:
  - `yas-ido-expand-snippet' : Select snippet using ido and expand it. 
  - `yas-ido-edit-snippet' : Select snippet using ido and edit it.
 
+* Customize
+You may need to change the value of `yas-ido-snippet-header-file' (which see)
+This can be done by:
+     M-x customize-variable RET yas-ido-snippet-header-file RET
 
 * Installation
 
