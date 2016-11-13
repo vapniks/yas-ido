@@ -158,6 +158,7 @@ When called non-interactively make/edit a snippet in file at LOCATION placing CO
 (defun yas-ido-expand-or-edit-snippet (arg)
   "With prefix ARG call `yas-ido-edit-snippet' else call `yas-ido-expand-snippet'."
   (interactive "P")
+  (unless yas-minor-mode (yas-minor-mode -1))
   (call-interactively
    (if arg 'yas-ido-edit-snippet
      'yas-ido-expand-snippet)))
